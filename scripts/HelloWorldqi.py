@@ -12,5 +12,3 @@ asr.setLanguage("Norwegian")
 memoryProxy = ses.service("ALMemory")
 
 tts.say("hei, verden")
-
-asr.unsubscribe("Test_ASR")
