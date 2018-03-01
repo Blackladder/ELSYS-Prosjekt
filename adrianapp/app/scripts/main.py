@@ -19,30 +19,10 @@ from random import randint
 
 
 import led
-#import RPi.GPIO as GPIO
 import time
 from signal import pause
 
 from gpiozero import Button
-
-# Oppsett av GPIO porter under her..flyttes til egen fil?
-#GPIO.setmode(GPIO.BCM)
-
-# Set 4 ports as HIGH (3.3V)
-#GPIO.setup(26, GPIO.OUT)
-#GPIO.setup(18, GPIO.OUT)
-#GPIO.setup(22, GPIO.OUT)
-#GPIO.setup(23, GPIO.OUT)
-#GPIO.output(26, 1);
-#GPIO.output(18, 1);
-#GPIO.output(22, 1);
-#GPIO.output(23, 1);
-
-#14,15,17,27
-#GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-#GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-#GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-#GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 
 channel_to_button = {
@@ -59,6 +39,19 @@ button_to_channel = {
 	1: 27
 	}
 
+button_to_norwegian_color = {
+	1: "rød",
+	2: "grønn",
+	3: "blå",
+	4: "hvit"
+	}
+
+button_to_english_color = {
+	1: "red",
+	2: "green",
+	3: "blue",
+	4: "white"
+	}
 
 
 class Activity(object):
@@ -88,23 +81,6 @@ class Activity(object):
 
 	self.isButtonCallbackRegistered = False
 
-	# skrur på at den skal lytte på knappene
-#	GPIO.add_event_detect(14, GPIO.RISING, bouncetime = 200)
-#	GPIO.add_event_detect(15, GPIO.RISING, bouncetime = 200)
-#	GPIO.add_event_detect(17, GPIO.RISING, bouncetime = 200)
-#	GPIO.add_event_detect(27, GPIO.RISING, bouncetime = 200)
-
-	#jf
-#	GPIO.add_event_callback(14 , self.button_pressed)
-#	GPIO.add_event_callback(15 , self.button_pressed)
-#	GPIO.add_event_callback(17 , self.button_pressed)
-#	GPIO.add_event_callback(27 , self.button_pressed)
-
-	# async event loop
-#	self.loop = asyncio.get_event_loop()
- #       self.loop.run_forever()
-  #      self.loop.close()
-
 
     def game_over(self):
 	self.set_all_leds_to_red()
@@ -126,19 +102,19 @@ class Activity(object):
 	self.buttonPressedCount = 0
 	if self.current_round_number > self.record_round_number:
 		self.record_round_number = self.current_round_number
+
+	# øker antall knapper som må huske med 1 kvar gang en klarer det
 #	self.number_of_buttons_to_remember = self.number_of_buttons_to_remember + 1
 
 	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Jippi!")
 
-#	self.remove_all_button_events()
 
-
+	# starter nytt spill
 	self.on_start()
 
 
     def button_pressed(self,channel):
 	buttonNr=channel
-#	buttonNr = channel_to_button[channel]
 #        self.logger.warning("Knapp ", buttonNr, " er registrert.")
 
 	if buttonNr == self.buttonSequence[self.buttonPressedCount]:
@@ -187,7 +163,7 @@ class Activity(object):
 	led.clearAllLeds();
 	time.sleep(0.5)
 
-	# spel av sequence
+	# spel av knappe/lys sekvens på panel
 	for button in self.buttonSequence:
 		print button
 		self.turn_on_button(button)
@@ -198,19 +174,22 @@ class Activity(object):
 
 	# vent på at bruker taster inn og sjekk underveis at det blir riktig
 
+
+	# setter alle knapper til å lyse med sin bestemte farge
 	self.turn_on_button( 1 )
 	self.turn_on_button( 2 )
 	self.turn_on_button( 3 )
 	self.turn_on_button( 4 )
 
+	# skrur på callback på knappene - resten av logikk i callback
 
-	if not( self.isButtonCallbackRegistered ):
-		print("registrerer callbacks")
-		self.b1.when_pressed = self.button_1_pressed # obs: ingen () til slutt
-		self.b2.when_pressed = self.button_2_pressed
-		self.b3.when_pressed = self.button_3_pressed
-		self.b4.when_pressed = self.button_4_pressed
-		self.isButtonCallbackRegistered = True
+#	if not( self.isButtonCallbackRegistered ):
+	print("registrerer callbacks")
+	self.b1.when_pressed = self.button_1_pressed # obs: ingen () til slutt
+	self.b2.when_pressed = self.button_2_pressed
+	self.b3.when_pressed = self.button_3_pressed
+	self.b4.when_pressed = self.button_4_pressed
+	self.isButtonCallbackRegistered = True
 
 
 
@@ -252,10 +231,6 @@ class Activity(object):
         # Two ways of waiting for events
         # 1) block until it's called
      #   self.s.ALTextToSpeech.say("Ta meg på hodet for å vekke meg når du er klar.")
-	#self.turn_on_button(1)
-	#self.turn_on_button(2)
-	#self.turn_on_button(3)
-	#self.turn_on_button(4)
         self.logger.warning("Listening for touch to wake up...")
 
 
@@ -286,13 +261,14 @@ class Activity(object):
 
     def turn_on_button(self,n):
 	if n==1:
-		led.setLed(1,"red")
+		led.setLed(1,button_to_english_color[1])
 	elif n==2:
-		led.setLed(2,"green")
+		led.setLed(2,button_to_english_color[2])
 	elif n==3:
-		led.setLed(3,"blue")
+		led.setLed(3,button_to_english_color[3])
 	elif n==4:
-		led.setLed(4,"white")
+		led.setLed(4,button_to_english_color[4])
+
     def turn_off_button(self,n):
 	if n==1:
 		led.clearLed(1)
