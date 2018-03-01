@@ -16,25 +16,25 @@ pwm = Adafruit_PCA9685.PCA9685()
 # Alternatively specify a different address and/or bus: pwm = Adafruit_PCA9685.PCA9685(address=0x41, busnum=2)
 pwm.set_pwm_freq(1000)
 
-
+colors = ['red', 'blue', 'green', 'white','purple']
 
 led_id_to_port = {
-	1: {
+	4: {
 		'red': 0,
 		'green': 1,
 		'blue': 2
 		},
-	2: {
+	3: {
 		'red': 3,
 		'green': 4,
 		'blue': 5
 		},
-	3: {
+	2: {
 		'red': 9,
 		'green': 10,
 		'blue': 11
 		},
-	4: {
+	1: {
 		'red': 6,
 		'green': 7,
 		'blue': 8
@@ -42,7 +42,7 @@ led_id_to_port = {
 }
 
 def setLed(n, color):
-	print(color)
+	#print(color)
 	clearLed(n)
 	if color=='red':
 		pwm.set_pwm(led_id_to_port[n]['red'], 0, 4095)
@@ -54,16 +54,24 @@ def setLed(n, color):
 		pwm.set_pwm(led_id_to_port[n]['red'], 0, 4095)
 		pwm.set_pwm(led_id_to_port[n]['green'], 0, 4095)
 		pwm.set_pwm(led_id_to_port[n]['blue'], 0, 4095)
-
+	elif color=='purple':
+		pwm.set_pwm(led_id_to_port[n]['red'], 0, 4095)
+		pwm.set_pwm(led_id_to_port[n]['blue'], 0, 4095)
 
 def setLedRandomColor(n):
-	colors = ['red', 'blue', 'green', 'white']
-#	randomColor = random.choice(colors)
-	print(random.choice(colors))
-	setLed(n, random.choice(colors))
+	randomColor = random.choice(colors)
+#	print(random.choice(colors))
+	setLed(n, randomColor)
+	return randomColor
 
 def clearLed(n):
 	pwm.set_pwm(led_id_to_port[n]['red'], 0, 0)
 	pwm.set_pwm(led_id_to_port[n]['green'], 0, 0)
 	pwm.set_pwm(led_id_to_port[n]['blue'], 0, 0)
+
+def clearAllLeds():
+	clearLed(1)
+	clearLed(2)
+	clearLed(3)
+	clearLed(4)
 
