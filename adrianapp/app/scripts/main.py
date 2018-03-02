@@ -14,6 +14,8 @@ import stk.runner
 import stk.events
 import stk.services
 import stk.logging
+import RPi.GPIO as GPIO 
+
 
 from random import randint
 
@@ -73,6 +75,25 @@ class Activity(object):
 	self.current_round_number = 0
 	self.record_round_number = 0
 
+	GPIO.setmode(GPIO.BCM) 
+
+
+	# Set 4 ports as HIGH (3.3V)
+	GPIO.setup(26, GPIO.OUT)
+	GPIO.setup(18, GPIO.OUT)
+	GPIO.setup(22, GPIO.OUT)
+	GPIO.setup(23, GPIO.OUT)
+	GPIO.output(26, 1);
+	GPIO.output(18, 1);
+	GPIO.output(22, 1);
+	GPIO.output(23, 1);
+
+	#14,15,17,27
+	GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+	GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+	GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+	GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
 	# registrerer buttons
 	self.b1 = Button(27, False)
 	self.b2 = Button(17, False)
@@ -84,6 +105,9 @@ class Activity(object):
 
     def game_over(self):
 	self.set_all_leds_to_red()
+	self.s.ALAnimatedSpeech.say("^start(my_animation_no) Nei...nei...nei!^wait(my_animation_no)")
+#	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei...nei...nei!^wait(animations/Stand/Emotions/Negative/Hurt_1)")
+#	time.sleep(10)
         self.logger.warning("Du tapte - du klarte: ", self.current_round_number, " runder før du feilet.")
 	self.buttonPressedCount = 0
 	self.current_round_number = 0;
@@ -91,7 +115,6 @@ class Activity(object):
         #self.logger.warning("venter på trykk på panna så starter det på nytt...")
         #while not self.events.wait_for("FrontTactilTouched"):
         #    pass
-	time.sleep(2)
 	self.on_start()
 
 
@@ -104,10 +127,11 @@ class Activity(object):
 		self.record_round_number = self.current_round_number
 
 	# øker antall knapper som må huske med 1 kvar gang en klarer det
-#	self.number_of_buttons_to_remember = self.number_of_buttons_to_remember + 1
+	self.number_of_buttons_to_remember = self.number_of_buttons_to_remember + 1
 
-	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Jippi!")
-
+#	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
+	self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Riktig!^wait(my_animation_yes)")
+#	time.sleep(10)
 
 	# starter nytt spill
 	self.on_start()
@@ -115,7 +139,7 @@ class Activity(object):
 
     def button_pressed(self,channel):
 	buttonNr=channel
-#        self.logger.warning("Knapp ", buttonNr, " er registrert.")
+        self.logger.warning("Knapp ", buttonNr, " er registrert.")
 
 	if buttonNr == self.buttonSequence[self.buttonPressedCount]:
 		self.turn_off_button( buttonNr )
@@ -232,9 +256,12 @@ class Activity(object):
         # 1) block until it's called
      #   self.s.ALTextToSpeech.say("Ta meg på hodet for å vekke meg når du er klar.")
         self.logger.warning("Listening for touch to wake up...")
+        #topic_name = self.s.ALDialog.loadTopic("/home/nao/Spill_v1_non.top")
+        #self.events.set("topic_name", topic_name)
+        #self.s.ALDialog.activateTopic(topic_name)
+        #self.s.ALDialog.subscribe("my_dialog")
 
-
-   #   while not self.events.wait_for("FrontTactilTouched"):
+   #   while not self.events.wait_for("GameStart"):
    #         pass
 
         # 2) explicitly connect a callback
