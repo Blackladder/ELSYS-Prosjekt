@@ -14,8 +14,6 @@ import stk.runner
 import stk.events
 import stk.services
 import stk.logging
-import RPi.GPIO as GPIO 
-
 
 from random import randint
 
@@ -24,7 +22,7 @@ import led
 import time
 from signal import pause
 
-from gpiozero import Button
+from gpiozero import Button, DigitalOutputDevice
 
 
 channel_to_button = {
@@ -67,46 +65,41 @@ class Activity(object):
         self.logger = stk.logging.get_logger(qiapp.session, self.APP_ID)
 
 	self.number_of_buttons_on_panel = 4
-	self.number_of_buttons_to_remember = 3
+	self.number_of_buttons_to_remember = 2
 
 
 	self.buttonSequence = list()
 	self.buttonPressedCount = 0
 	self.current_round_number = 0
 	self.record_round_number = 0
+	self.s.ALTextToSpeech.setLanguage("Norwegian")
+	#self.s.ALSpeechRecognition.setLanguage("Norwegian")
 
-	GPIO.setmode(GPIO.BCM) 
 
-
-	# Set 4 ports as HIGH (3.3V)
-	GPIO.setup(26, GPIO.OUT)
-	GPIO.setup(18, GPIO.OUT)
-	GPIO.setup(22, GPIO.OUT)
-	GPIO.setup(23, GPIO.OUT)
-	GPIO.output(26, 1);
-	GPIO.output(18, 1);
-	GPIO.output(22, 1);
-	GPIO.output(23, 1);
-
-	#14,15,17,27
-	GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-	GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-	GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-	GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
+	# GPIOZero setup
 	# registrerer buttons
 	self.b1 = Button(27, False)
 	self.b2 = Button(17, False)
 	self.b3 = Button(15, False)
 	self.b4 = Button(14, False)
 
+	# GPIOZero setter 4 pinner høg for å drive knapper
+	DigitalOutputDevice(18);
+	DigitalOutputDevice(22);
+	DigitalOutputDevice(23);
+	DigitalOutputDevice(26);
+
 	self.isButtonCallbackRegistered = False
 
 
     def game_over(self):
 	self.set_all_leds_to_red()
-	self.s.ALAnimatedSpeech.say("^start(my_animation_no) Nei...nei...nei!^wait(my_animation_no)")
-#	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei...nei...nei!^wait(animations/Stand/Emotions/Negative/Hurt_1)")
+	if(self.current_round_number==0):
+		self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Positive/Laugh_1)^wait(animations/Stand/Emotions/Positive/Laugh_1)")
+		self.s.ALTextToSpeech.say("Taper, du tapte på første runde!")
+	else:
+#		self.s.ALAnimatedSpeech.say("^start(my_animation_no) Nei nei nei!^wait(my_animation_no)")
+		self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei nei nei!^wait(animations/Stand/Emotions/Negative/Hurt_1)")
 #	time.sleep(10)
         self.logger.warning("Du tapte - du klarte: ", self.current_round_number, " runder før du feilet.")
 	self.buttonPressedCount = 0
@@ -115,26 +108,32 @@ class Activity(object):
         #self.logger.warning("venter på trykk på panna så starter det på nytt...")
         #while not self.events.wait_for("FrontTactilTouched"):
         #    pass
-	self.on_start()
+	self.play()
 
 
     def game_won(self):
+#	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
 	self.set_all_leds_to_green()
+	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Applause) Riktig!^wait(animations/Stand/Gestures/Applause)")
 	self.current_round_number = self.current_round_number + 1;
         self.logger.warning("Du vann - du har no klart: ", self.current_round_number, " runder!")
 	self.buttonPressedCount = 0
-	if self.current_round_number > self.record_round_number:
+	if ((self.current_round_number > self.record_round_number) and self.current_round_number!=1):
 		self.record_round_number = self.current_round_number
+		self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer, du satt ny rekord!^wait(my_animation_yes)")
+		
+		
 
 	# øker antall knapper som må huske med 1 kvar gang en klarer det
-	self.number_of_buttons_to_remember = self.number_of_buttons_to_remember + 1
+	self.number_of_buttons_to_remember += 1
+	
 
-#	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
-	self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Riktig!^wait(my_animation_yes)")
+
+	
 #	time.sleep(10)
 
 	# starter nytt spill
-	self.on_start()
+	self.play()
 
 
     def button_pressed(self,channel):
@@ -145,7 +144,7 @@ class Activity(object):
 		self.turn_off_button( buttonNr )
 		time.sleep(0.3)
 		self.turn_on_button( buttonNr )
-		self.buttonPressedCount = self.buttonPressedCount + 1
+		self.buttonPressedCount += 1
 		if self.buttonPressedCount == (len(self.buttonSequence)):
 			self.game_won()
 	else:
@@ -179,7 +178,7 @@ class Activity(object):
 				self.buttonSequence.append(randomKnapp)
 		else:
 			self.buttonSequence.append(randomKnapp)
-
+	self.s.ALAnimatedSpeech.say("Runde, "+str(self.current_round_number+1))
 	print(self.buttonSequence)
 #	self.buttonSequence = [1,2,3,2];
 
@@ -256,14 +255,20 @@ class Activity(object):
         # 1) block until it's called
      #   self.s.ALTextToSpeech.say("Ta meg på hodet for å vekke meg når du er klar.")
         self.logger.warning("Listening for touch to wake up...")
-        #topic_name = self.s.ALDialog.loadTopic("/home/nao/Spill_v1_non.top")
-        #self.events.set("topic_name", topic_name)
-        #self.s.ALDialog.activateTopic(topic_name)
-        #self.s.ALDialog.subscribe("my_dialog")
-
-   #   while not self.events.wait_for("GameStart"):
-   #         pass
-
+        """
+        topic_name = self.s.ALDialog.loadTopic("/home/nao/Spill_v1_non.top")
+        self.events.set("topic_name", topic_name)
+        self.s.ALDialog.activateTopic(topic_name)
+        self.s.ALDialog.subscribe("my_dialog")
+        """
+    	while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
+        	pass
+        """
+        self.events.set("GameStart", 0)
+        self.s.ALDialog.unsubscribe("my_dialog")
+        self.s.ALDialog.deactivateTopic(topic_name)
+        self.s.ALDialog.unloadTopic(topic_name)
+        """
         # 2) explicitly connect a callback
    #     if self.s.ALTabletService:
    #         self.events.connect("ALTabletService.onTouchDown", self.on_touched)
