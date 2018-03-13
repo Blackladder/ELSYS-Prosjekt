@@ -17,12 +17,11 @@ import stk.logging
 
 from random import randint
 
-
 import led
 import time
 from signal import pause
 
-from gpiozero import Button, DigitalOutputDevice
+from gpiozero import Button, OutputDevice
 
 
 channel_to_button = {
@@ -76,18 +75,17 @@ class Activity(object):
 	#self.s.ALSpeechRecognition.setLanguage("Norwegian")
 
 
-	# GPIOZero setup
+	# Setter fire pinner høg for å drive knapper
+	self.out1 = OutputDevice(22, True, True)
+	self.out2 = OutputDevice(23, True, True)
+	self.out3 = OutputDevice(18, True, True)
+	self.out4 = OutputDevice(26, True, True)
+
 	# registrerer buttons
 	self.b1 = Button(27, False)
 	self.b2 = Button(17, False)
 	self.b3 = Button(15, False)
 	self.b4 = Button(14, False)
-
-	# GPIOZero setter 4 pinner høg for å drive knapper
-	DigitalOutputDevice(18);
-	DigitalOutputDevice(22);
-	DigitalOutputDevice(23);
-	DigitalOutputDevice(26);
 
 	self.isButtonCallbackRegistered = False
 
@@ -122,14 +120,9 @@ class Activity(object):
 		self.record_round_number = self.current_round_number
 		self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer, du satt ny rekord!^wait(my_animation_yes)")
 		
-		
 
 	# øker antall knapper som må huske med 1 kvar gang en klarer det
 	self.number_of_buttons_to_remember += 1
-	
-
-
-	
 #	time.sleep(10)
 
 	# starter nytt spill
@@ -208,7 +201,7 @@ class Activity(object):
 
 #	if not( self.isButtonCallbackRegistered ):
 	print("registrerer callbacks")
-	self.b1.when_pressed = self.button_1_pressed # obs: ingen () til slutt
+	self.b1.when_pressed = self.button_1_pressed
 	self.b2.when_pressed = self.button_2_pressed
 	self.b3.when_pressed = self.button_3_pressed
 	self.b4.when_pressed = self.button_4_pressed
@@ -222,12 +215,26 @@ class Activity(object):
 
 #	self.stop()
 
+    def people_found(self):
+	print("People found")
+	#jfs
+    def look_for_people(self):
+	pd = self.s.ALPeoplePerception
+	p = self.events.connect("PeoplePerception/PeopleList", self.people_found)
+
+	print(self.s.ALPeoplePerception.isFaceDetectionEnabled())
 
     def ask_to_start(self):
         self.logger.warning("ask to start...")
 
 	self.s.ALSpeechRecognition.setLanguage("Norwegian")
 	self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
+
+
+
+
+
+
 
 
         self.logger.warning("waiting for word..")
@@ -250,6 +257,8 @@ class Activity(object):
         self.stop()
 
     def on_start(self):
+
+	self.look_for_people()
         "Ask to be touched, waits, and exits."
         # Two ways of waiting for events
         # 1) block until it's called
@@ -261,8 +270,8 @@ class Activity(object):
         self.s.ALDialog.activateTopic(topic_name)
         self.s.ALDialog.subscribe("my_dialog")
         """
-    	while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
-        	pass
+#    	while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
+#        	pass
         """
         self.events.set("GameStart", 0)
         self.s.ALDialog.unsubscribe("my_dialog")
