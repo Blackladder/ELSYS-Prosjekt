@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 """
-Adrianapp 
+Adrianapp
 """
 
 
@@ -14,9 +14,9 @@ import stk.runner
 import stk.events
 import stk.services
 import stk.logging
-import forstemann
-from random import randint
 import threading
+
+from random import randint
 
 import led
 import time
@@ -27,42 +27,42 @@ from gpiozero import Button, OutputDevice
 
 channel_to_button = {
 		14: 4,
-	15: 3,
-	17: 2,
-	27: 1
-	}
+		15: 3,
+		17: 2,
+		27: 1
+		}
 
 button_to_channel = {
 		4: 14,
-	3: 15,
-	2: 17,
-	1: 27
-	}
+		3: 15,
+		2: 17,
+		1: 27
+		}
 
 button_to_norwegian_color = {
-	1: "rød",
-	2: "grønn",
-	3: "blå",
-	4: "hvit"
-	}
+		1: "rÃƒÂ¸d",
+		2: "grÃƒÂ¸nn",
+		3: "blÃƒÂ¥",
+		4: "hvit"
+		}
 
 button_to_english_color = {
-	1: "red",
-	2: "green",
-	3: "blue",
-	4: "white"
-	}
+		1: "red",
+		2: "green",
+		3: "blue",
+		4: "white"
+		}
 
 
 class Activity(object):
 	"A sample standalone app, that demonstrates simple Python usage"
 	APP_ID = "com.aldebaran.adrianapp"
 	def __init__(self, qiapp):
+
 		self.qiapp = qiapp
 		self.events = stk.events.EventHelper(qiapp.session)
 		self.s = stk.services.ServiceCache(qiapp.session)
 		self.logger = stk.logging.get_logger(qiapp.session, self.APP_ID)
-		self.Fmann = forstemann.Activity(self.qiapp)
 
 		self.number_of_buttons_on_panel = 4
 		self.number_of_buttons_to_remember = 2
@@ -76,63 +76,79 @@ class Activity(object):
 		#self.s.ALSpeechRecognition.setLanguage("Norwegian")
 
 
-		# Setter fire pinner høg for å drive knapper
+		# Setter fire pinner hÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¸g for ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ drive knapper
 		self.out1 = OutputDevice(22, True, True)
 		self.out2 = OutputDevice(23, True, True)
 		self.out3 = OutputDevice(18, True, True)
 		self.out4 = OutputDevice(26, True, True)
-		"""
+
 		# registrerer buttons
 		self.b1 = Button(27, False)
 		self.b2 = Button(17, False)
 		self.b3 = Button(15, False)
 		self.b4 = Button(14, False)
-		"""
+
 		self.isButtonCallbackRegistered = False
 
-
 	def game_over(self):
-		self.set_all_leds_to_red()
+		negative_reactions = ["animations/Stand/Negative/Bored_1","animations/Stand/Emotions/Negative/Disappointed_1", "animations/Stand/Emotions/Negative/Exhausted_1", "animations/Stand/Emotions/Negative/Hurt_1", "animations/Stand/Emotions/Negative/Hurt_2", "animations/Stand/Emotions/Neutral/Confused_1"]
+		self.blink = threading.Thread(name="blink_1",target = self.blink_button, args = ("red",))
+		led.clearAllLeds()
+		self.blink.start()
+		self.animnum = randint(0,len(negative_reactions)-1)
 		if(self.current_round_number==0):
 			self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Positive/Laugh_1)^wait(animations/Stand/Emotions/Positive/Laugh_1)")
-			self.s.ALTextToSpeech.say("Taper, du tapte på første runde!")
+			self.s.ALTextToSpeech.say("Taper, du tapte pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¸rste runde!")
 		else:
-	#       self.s.ALAnimatedSpeech.say("^start(my_animation_no) Nei nei nei!^wait(my_animation_no)")
-			self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei nei nei!^wait(animations/Stand/Emotions/Negative/Hurt_1)")
-	#   time.sleep(10)
-			self.logger.warning("Du tapte - du klarte: ", self.current_round_number, " runder før du feilet.")
+#               self.s.ALAnimatedSpeech.say("^start(my_animation_no) Nei nei nei!^wait(my_animation_no)")
+			self.s.ALAnimatedSpeech.say("^start("+negative_reactions[self.animnum]+") Nei nei nei!^wait("+negative_reactions[self.animnum]+")")
+#       time.sleep(10)
+		self.logger.warning("Du tapte - du klarte: ", self.current_round_number, " runder fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¸r du feilet.")
 		self.buttonPressedCount = 0
 		self.current_round_number = 0;
 		self.number_of_buttons_to_remember = 2
-			#self.logger.warning("venter på trykk på panna så starter det på nytt...")
-			#while not self.events.wait_for("FrontTactilTouched"):
-			#    pass
+		#self.logger.warning("venter pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ trykk pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ panna sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ starter det pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ nytt...")
+		#while not self.events.wait_for("FrontTactilTouched"):
+		#    pass
 		self.play()
 
 
 	def game_won(self):
-	#   self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
-		self.set_all_leds_to_green()
-		self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Applause) Riktig!^wait(animations/Stand/Gestures/Applause)")
+		positive_reactions = ["animations/Stand/Emotions/Positive/Excited_1", "animations/Stand/Emotions/Positive/Excited_2", "animations/Stand/Emotions/Positive/Happy_1", "animations/Stand/Emotions/Positive/Happy_2", "animations/Stand/Emotions/Positive/Happy_3", "animations/Stand/Gestures/Applause_1"]
+#       self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
+		self.blink = threading.Thread(name="blink_1",target = self.blink_button, args = ("green",))
+		led.clearAllLeds()
+		self.blink.start()
+		self.animnum = randint(0,len(positive_reactions)-1)
+		self.s.ALAnimatedSpeech.say("^start("+positive_reactions[self.animnum]+") Riktig!^wait("+positive_reactions[self.animnum]+")")
 		self.current_round_number = self.current_round_number + 1;
 		self.logger.warning("Du vann - du har no klart: ", self.current_round_number, " runder!")
 		self.buttonPressedCount = 0
 		if ((self.current_round_number > self.record_round_number) and self.current_round_number!=1):
 			self.record_round_number = self.current_round_number
 			self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer, du satt ny rekord!^wait(my_animation_yes)")
-			
 
-		# øker antall knapper som må huske med 1 kvar gang en klarer det
+
+		# ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¸ker antall knapper som mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ huske med 1 kvar gang en klarer det
 		self.number_of_buttons_to_remember += 1
-	#   time.sleep(10)
+#       time.sleep(10)
 
 		# starter nytt spill
 		self.play()
 
+	def blink_button(self, colour):
+		for i in range(0,5):
+			for button in range(1,5):
+				led.setLed(button, colour)
+			time.sleep(0.25)
+			for button in range(1,5):
+				led.clearLed(button)
+			time.sleep(0.25)
 
 	def button_pressed(self,channel):
 		buttonNr=channel
 		self.logger.warning("Knapp ", buttonNr, " er registrert.")
+
 		if buttonNr == self.buttonSequence[self.buttonPressedCount]:
 			self.turn_off_button( buttonNr )
 			time.sleep(0.3)
@@ -160,26 +176,26 @@ class Activity(object):
 	def play(self):
 		self.logger.warning("play.")
 
-		# lager random sequence uten samme knapp på rad
+		# lager random sequence uten samme knapp pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ rad
 		self.buttonSequence[:] = []
 		while len(self.buttonSequence) < self.number_of_buttons_to_remember:
 			randomKnapp = randint(1, self.number_of_buttons_on_panel)
 
 			if len(self.buttonSequence) > 0: # minst en verdi er lagt til
-							# sjekk at verdi er ulike forrige
+											# sjekk at verdi er ulike forrige
 				if randomKnapp != self.buttonSequence[len(self.buttonSequence)-1]:
 					self.buttonSequence.append(randomKnapp)
 			else:
 				self.buttonSequence.append(randomKnapp)
 		self.s.ALAnimatedSpeech.say("Runde, "+str(self.current_round_number+1))
 		print(self.buttonSequence)
-	#   self.buttonSequence = [1,2,3,2];
+#       self.buttonSequence = [1,2,3,2];
 
 
 		led.clearAllLeds();
 		time.sleep(0.5)
 
-		# spel av knappe/lys sekvens på panel
+		# spel av knappe/lys sekvens pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ panel
 		for button in self.buttonSequence:
 			print button
 			self.turn_on_button(button)
@@ -188,18 +204,18 @@ class Activity(object):
 			time.sleep(0.2)
 
 
-		# vent på at bruker taster inn og sjekk underveis at det blir riktig
+		# vent pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ at bruker taster inn og sjekk underveis at det blir riktig
 
 
-		# setter alle knapper til å lyse med sin bestemte farge
+		# setter alle knapper til ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ lyse med sin bestemte farge
 		self.turn_on_button( 1 )
 		self.turn_on_button( 2 )
 		self.turn_on_button( 3 )
 		self.turn_on_button( 4 )
 
-		# skrur på callback på knappene - resten av logikk i callback
+		# skrur pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ callback pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ knappene - resten av logikk i callback
 
-	#   if not( self.isButtonCallbackRegistered ):
+#       if not( self.isButtonCallbackRegistered ):
 		print("registrerer callbacks")
 		self.b1.when_pressed = self.button_1_pressed
 		self.b2.when_pressed = self.button_2_pressed
@@ -209,18 +225,18 @@ class Activity(object):
 
 
 
-	#   while not( self.user_input_finished ):
-	#       dummy = 1
+#       while not( self.user_input_finished ):
+#               dummy = 1
 
 
-	#   self.stop()
+#       self.stop()
 
 	def people_found(self):
 		print("People found")
 		#jfs
 	def look_for_people(self):
 		pd = self.s.ALPeoplePerception
-		p = self.events.connect("PeoplePerception/PeopleList", self.people_found)
+		# p = self.events.connect("PeoplePerception/PeopleList", self.people_found)
 
 		print(self.s.ALPeoplePerception.isFaceDetectionEnabled())
 
@@ -230,9 +246,16 @@ class Activity(object):
 		self.s.ALSpeechRecognition.setLanguage("Norwegian")
 		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
 
+
+
+
+
+
+
+
 		self.logger.warning("waiting for word..")
 		data = self.events.wait_for("WordRecognized", True)
-	#   data = self.events.get("WordRecognized")
+#       data = self.events.get("WordRecognized")
 		time.sleep(2)
 		print( data)
 
@@ -241,41 +264,36 @@ class Activity(object):
 		else:
 			self.on_start()
 
-			self.logger.warning("got word..")
+		self.logger.warning("got word..")
+
+
+
+
+
 		self.stop()
 
 	def on_start(self):
+
 		self.look_for_people()
 		"Ask to be touched, waits, and exits."
 		# Two ways of waiting for events
 		# 1) block until it's called
-		#self.s.ALTextToSpeech.say("Ta meg på hodet for å vekke meg når du er klar.")
+	 #   self.s.ALTextToSpeech.say("Ta meg pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ hodet for ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ vekke meg nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥r du er klar.")
 		self.logger.warning("Listening for touch to wake up...")
-
-		self.Fstart = threading.Thread(name = "Fmann_start", target = self.Fmann.on_start)
-		self.Fstart.start()
-		while (not self.Fmann.done):
-			pass
-		self.Fstart.stop()
-		self.Fstart.start()
-		while (not self.Fmann.done):
-			pass
-		self.Fstart.stop()
-		self.logger.warning("Test ferdig")
 		"""
 		topic_name = self.s.ALDialog.loadTopic("/home/nao/Spill_v1_non.top")
 		self.events.set("topic_name", topic_name)
 		self.s.ALDialog.activateTopic(topic_name)
 		self.s.ALDialog.subscribe("my_dialog")
 		"""
-	#while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
-	#   pass
+#       while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
+#               pass
 		"""
 		self.events.set("GameStart", 0)
 		self.s.ALDialog.unsubscribe("my_dialog")
 		self.s.ALDialog.deactivateTopic(topic_name)
 		self.s.ALDialog.unloadTopic(topic_name)
-		
+		"""
 		# 2) explicitly connect a callback
    #     if self.s.ALTabletService:
    #         self.events.connect("ALTabletService.onTouchDown", self.on_touched)
@@ -283,15 +301,15 @@ class Activity(object):
 			# (this allows to simltaneously speak and watch an event)
    #     else:
 #        self.s.ALTextToSpeech.say("Du tok meg " + \
- #               "på pannen.")
-		"""
+ #               "pÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ pannen.")
 
-	#	time.sleep(1)
-	#   self.turn_off_button(1)
-	#   self.turn_off_button(2)
-	#   self.turn_off_button(3)
-	#   self.turn_off_button(4)
-	#	time.sleep(1)
+
+		time.sleep(1)
+#       self.turn_off_button(1)
+#       self.turn_off_button(2)
+#       self.turn_off_button(3)
+#       self.turn_off_button(4)
+		time.sleep(1)
 
 		self.play()
 		#self.ask_to_start()
@@ -318,7 +336,7 @@ class Activity(object):
 		elif n==4:
 			led.clearLed(4)
 
-	
+
 
 	def set_all_leds_to_red(self):
 		led.setLed(1,"red")
@@ -335,7 +353,7 @@ class Activity(object):
 
 	def stop(self):
 		"Standard way of stopping the application."
-#        self.s.ALTextToSpeech.say("Nå stopper jeg" + \
+#        self.s.ALTextToSpeech.say("NÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¥ stopper jeg" + \
  #               " programmet.")
 		self.qiapp.stop()
 

@@ -59,7 +59,7 @@ def get_debug_robot():
     return raw_input("connect to which robot? ")
 
 
-def init(qi_url=None):
+def init(qi_url="192.168.43.100"):
     "Returns a QiApplication object, possibly with interactive input."
     if qi_url:
         sys.argv.extend(["--qi-url", qi_url])
