@@ -7,6 +7,7 @@ import stk.events
 import stk.services
 import stk.logging
 import threading
+import nao_reactions as nr
 
 #from random import randint
 import random
@@ -133,10 +134,12 @@ class Wack():
 		return self # this is bound to the `as` part	
 
 	def wack_game_over(self):
-		self.logger.warning("Spiller fikk "+str(self.score)+" poeng")
+		self.logger.warning("Spiller fikk "+str(self.score)+" poeng.")
 		if(self.score>=0):
-			self.s.ALTextToSpeech.say("Du fikk "+str(self.score)+" poeng")
-		self.stop()
+			self.s.ALTextToSpeech.say("Du fikk " + str(self.score) + " poeng.")
+		else:
+			self.s.ALTextToSpeech.say("Du fikk minus " + str(-self.score) + " poeng.")
+		self.game_ask_play_again()
 
 	def wack_button_pressed(self, channel):
 		if(self.moles[channel]):
@@ -147,11 +150,12 @@ class Wack():
 			if(self.puppies[randy]):
 				self.puppies[randy] = False
 				led.clearLed(randy)
+			self.molePressed = True
 		elif(self.puppies[channel]):
 			self.puppies[channel]=False
-			self.score -= 3
+			self.score -= 1
 			led.clearLed(channel)
-		self.molePressed = True
+			self.molePressed = True
 
 
 
@@ -184,14 +188,16 @@ class Wack():
 
 
 	def new_mole(self):
-		self.new_mole_nr = random.randint(1,9) #Random int 1-9
+		self.new_mole_nr = 0
+		while(self.moles[self.new_mole_nr] or self.puppies[self.new_mole_nr]):
+			self.new_mole_nr = random.randint(1,9)
 		self.moles[self.new_mole_nr] = True
 		led.setLed(self.new_mole_nr, "green")
 
 
 	def new_puppy(self):
 		self.new_puppy_nr = 0
-		while(self.moles[self.new_puppy_nr]):
+		while(self.moles[self.new_puppy_nr] or self.puppies[self.new_puppy_nr]):
 			self.new_puppy_nr = random.randint(1,9) #Random int 1-9
 		self.puppies[self.new_puppy_nr] = True
 		led.setLed(self.new_puppy_nr, "red")
@@ -207,8 +213,8 @@ class Wack():
 		self.moles = [True,False,False,False,False,False,False,False,False,False]
 		self.puppies = [True,False,False,False,False,False,False,False,False,False]
 		self.game_active = True
-		self.new_mole_nr = 0
-		self.new_puppy_nr = 0
+		self.new_mole_nr = 1
+		self.new_puppy_nr = 1
 
 		self.isButtonCallbackRegistered = False
 		#self.mole_times = [0]
@@ -233,15 +239,28 @@ class Wack():
 		self.b9.when_pressed = self.wack_button_9_pressed
 
 		self.countdown = threading.Timer(self.wack_gametime, self.wack_countdown)
+		self.countdown.start()
 		while(self.game_active):
-			self.moles[self.new_mole_nr] = False
-			self.puppies[self.new_puppy_nr] = False
-			led.clearLed(self.new_mole_nr)
-			led.clearLed(self.new_puppy_nr)
+			for i in range(1,10):
+				self.moles[i] = False
+				self.puppies[i] = False
+				led.clearLed(i)
+				led.clearLed(i)
 			self.molePressed = False
-			self.new_mole()
-			self.new_puppy()
-			while(not self.molePressed):
+			self.twentieths = 0
+			randint = random.randint(1,4)
+
+			#print"Before new stuff"
+			#self.new_mole()
+			#print"between stuff"
+			#self.new_puppy()
+			#print"after new stuff"
+
+			for i in range(0, randint):
+				self.new_mole()
+				self.new_puppy()
+			while((self.twentieths < 10)):
+				self.twentieths += 1
 				time.sleep(0.05)
 		for i in range(1,10):
 			self.moles[i] = False
@@ -249,6 +268,27 @@ class Wack():
 		led.clearAllLeds()
 		self.logger.warning("Wack-a-mole game over")
 		self.wack_game_over()
+
+	def game_ask_play_again(self):
+
+		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
+		#self.s.ALSpeechRecognition.pause(False)
+		self.s.ALTextToSpeech.say("Vil du spille en gang til?")
+		self.logger.warning("waiting for word..vil du spille en gang til? - ja eller nei")
+		data = self.events.wait_for("WordRecognized", True)
+	#	data = self.events.get("WordRecognized")
+
+		if data[0] == "ja":
+			print("Ja, jeg vil spille!")
+			self.s.ALAnimatedSpeech.say("Da tar vi en runde til!")
+			self.wack_a_mole()
+			#self.quit_app = True
+		elif data[0] == "nei":
+			print("nei, jeg vil ikke spille")
+			self.s.ALAnimatedSpeech.say("Det var hyggelig å spille med deg, håper å spille mer med deg senere!")
+			self.finished_playing = True
+			#self.quit_app = True
+			self.stop()
 
 	def stop(self):
 		return

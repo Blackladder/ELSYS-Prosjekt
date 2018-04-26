@@ -20,6 +20,7 @@ import threading
 import random
 
 import led
+import nao_reactions as nr
 import time
 from signal import pause
 
@@ -27,6 +28,7 @@ import timeit
 
 import foerstemann
 import fluesmekkeren as wack
+import hermegaas
 
 
 from gpiozero import Button, OutputDevice
@@ -108,6 +110,8 @@ class Choreographer():
 		self.b7 = Button(8, False)
 		self.b8 = Button(27, False)
 		self.b9 = Button(23, False)
+
+		print(nr.getEmotPos())
 
 		
 		while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
@@ -219,7 +223,7 @@ class Choreographer():
 		led.clearAllLeds()
 		self.events.cancel_wait()
 		self.close_menu_buttons()
-		with Activity(self.qiapp) as a:
+		with hermegaas.Hermegaas(qiapp) as a:
 			a.on_start()
 		# kommer tilbake hit etter spillet
 		print("kommt tilbake til hovedprogram etter simon")
@@ -343,7 +347,7 @@ class Choreographer():
 		self.s.ALSpeechRecognition.setLanguage("Norwegian")
 		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
 		self.s.ALSpeechRecognition.pause(False)
-		self.s.ALAnimatedSpeech.say("Hei, vil du spille et spill med meg?")
+		self.s.ALAnimatedSpeech.say("Hei jeg er Adrian, vil du spille et spill med meg?")
 		self.logger.warning("waiting for word..vil du spille? - ja eller nei")
 		data = self.events.wait_for("WordRecognized", True)
 	#	data = self.events.get("WordRecognized")
@@ -503,11 +507,18 @@ class Activity():
 	def game_won(self):
 		#elf.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
 		self.set_all_leds_to_green()
-		self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Positive/Excited_1) Riktig!^wait(animations/Stand/Emotions/Positive/Excited_1)")
+		pos_emotion = nr.getEmotPos()
+		pos_saying = nr.getSayingPos()
+		print(pos_emotion)
+		print(pos_saying)
+		self.s.ALAnimatedSpeech.say("^start(" + str(pos_emotion) + ") " + str(pos_saying) + " ^wait(" + str(pos_emotion) + ")")
+		#self.s.ALAnimatedSpeech.say("^start(animations/Stand/Emotions/Positive/Excited_1) Riktig!^wait(animations/Stand/Emotions/Positive/Excited_1)")
 		self.current_round_number = self.current_round_number + 1;
-	        self.logger.warning("Du vann - du har no klart: ", self.current_round_number, " runder!")
+		#if (self.current_round_number > 1)
+		#        self.logger.warning("Du vann - du har no klart: ", self.current_round_number, " runder!")
+
 		self.buttonPressedCount = 0
-		if ((self.current_round_number > self.record_round_number) and self.current_round_number > 5):
+		if ((self.current_round_number > self.record_round_number) and self.current_round_number > 4):
 			self.record_round_number = self.current_round_number
 			self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer, du satt ny rekord!^wait(my_animation_yes)")
 			

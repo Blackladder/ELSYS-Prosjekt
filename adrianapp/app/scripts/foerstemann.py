@@ -17,6 +17,7 @@ import RPi.GPIO as GPIO
 import timeit
 import threading
 import random
+import nao_reactions as nr
 
 
 import led
@@ -194,6 +195,10 @@ class Foerstemann(object):
 
 
 	def game_won(self):
+		pos_emotion = nr.getEmotPos()
+		pos_saying = nr.getSayingPos()
+		print(pos_emotion)
+		print(pos_saying)
 		if self.gameMode=="SP":
 			#self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
 			self.blink = threading.Thread(name="blink_1",target = self.blink_button, args = (self.round_winner_button, "green"))
@@ -203,12 +208,12 @@ class Foerstemann(object):
 			self.playerScores[self.round_winner_button]+=1
 			if (self.playerScores[self.round_winner_button]<5):
 				if(self.playerScores[self.round_winner_button]==4):
-					self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Applause) Jippi! Du trykket i tide. Bare en runde igjen")
+					self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Jippi! Du trykket i tide. Bare en runde igjen ^wait(" + pos_emotion + ")")
 				else:
-					self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Applause) Jippi! Du trykket i tide. Bare " +str(5-self.playerScores[self.round_winner_button])+"Runder igjen")
+					self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Jippi! Du trykket i tide. Bare " +str(5-self.playerScores[self.round_winner_button])+"Runder igjen ^wait(" + pos_emotion + ")")
 				self.next_round = True
 			else:
-				self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer!, du vant spillet")
+				self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Gratulerer!, du vant spillet ^wait(" + pos_emotion + ")")
 				self.stop()
 		elif self.gameMode == "MP":
 			
@@ -218,19 +223,19 @@ class Foerstemann(object):
 			led.clearAllLeds()
 			self.blink.start()
 			self.playerScores[self.round_winner_button]+=1
-			if (self.playerScores[self.round_winner_button]!=3):
-			 	self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Applause) Gratulerer! Spiller " +
+			if (self.playerScores[self.round_winner_button]<3):
+			 	self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Gratulerer! Spiller " +
 			 		str(self.round_winner) +
-			 		", du trykket først.")
+			 		", du trykket først. ^wait(" + pos_emotion + ")")
 			else:
 				if(self.survivor):
-					self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer! Spiller " +
+					self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Gratulerer! Spiller " +
 						str(self.round_winner) +
-						", du er siste gjenværende spiller og har vunnet spillet.")
+						", du er siste gjenværende spiller og har vunnet spillet. ^wait(" + pos_emotion + ")")
 				else:
-					self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer! Spiller " +
+					self.s.ALAnimatedSpeech.say("^start(" + pos_emotion + ") Gratulerer! Spiller " +
 						str(self.round_winner) +
-						", du vant spillet.")
+						", du vant spillet. ^wait(" + pos_emotion + ")")
 					self.stop()
 			#self.blink_button(self.round_winner_button, "green")
 			
@@ -247,30 +252,32 @@ class Foerstemann(object):
 	def button_pressed(self,channel):
 		buttonNr=channel
 		print("button " + str(channel) + " pressed")
-		self.logger.warning("Knapp ", buttonNr, " er registrert.")
-		if(self.gameMode == "SP") and (self.gameStarted):
-			self.press_time.cancel() #Stopp enspillertiden
-		if self.gameStarted:
-			if(self.fail):
+		if(self.firstPress):
+			self.firstPress = False
+			self.logger.warning("Knapp ", buttonNr, " er registrert.")
+			if(self.gameMode == "SP") and (self.gameStarted):
+				self.press_time.cancel() #Stopp enspillertiden
+			if self.gameStarted:
+				if(self.fail):
+					self.round_loser = buttonNr
+					self.round_loser_button = buttonNr
+					self.gameStarted = False
+					self.round_one = False
+					self.game_over()
+				else:
+					self.timeStop = timeit.default_timer()
+					self.round_winner = buttonNr
+					self.round_winner_button = buttonNr
+					self.gameStarted = False
+					self.round_one = False
+					self.game_won()
+			else:
+				self.fail = True
 				self.round_loser = buttonNr
 				self.round_loser_button = buttonNr
-				self.gameStarted = False
-				self.round_one = False
-				self.game_over()
-			else:
-				self.timeStop = timeit.default_timer()
-				self.round_winner = buttonNr
-				self.round_winner_button = buttonNr
-				self.gameStarted = False
-				self.round_one = False
-				self.game_won()
-		else:
-			self.fail = True
-			self.round_loser = buttonNr
-			self.round_loser_button = buttonNr
-			if(self.gameMode == "MP"):
-				self.players[buttonNr] = False
-		self.play_stop = False
+				if(self.gameMode == "MP"):
+					self.players[buttonNr] = False
+			self.play_stop = False
 		
 
 
@@ -328,7 +335,7 @@ class Foerstemann(object):
 		self.logger.warning("test. test")
 
 	def play(self):
-		
+		self.survivor = False
 		while(self.currently_playing): #To be renamed
 			self.next_round = False
 			self.play_stop = False
@@ -342,6 +349,7 @@ class Foerstemann(object):
 
 				if button_to_english_color[randomKnapp] != "green":
 					self.buttonSequence.append(randomKnapp)
+			self.firstPress = True
 
 			if self.gameMode=="SP":
 				#led.clearAllLeds();
@@ -551,23 +559,25 @@ class Foerstemann(object):
 		self.play_stop = True
 		self.currently_playing = False
 		self.next_round = True
-#        self.s.ALTextToSpeech.say("Nå stopper jeg" + \ #               " programmet.")
-		"""
-		self.s.ALSpeechRecognition.setLanguage("Norwegian")
-		self.s.ALSpeechRecognition.setVocabulary( ["ja","nei"], False )
-		self.logger.warning("waiting for word..")
-		self.s.ALAnimatedSpeech.say("Vil du spille igjen?")
+
+		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
+		#self.s.ALSpeechRecognition.pause(False)
+		self.s.ALTextToSpeech.say("Vil du spille en gang til?")
+		self.logger.warning("waiting for word..vil du spille en gang til? - ja eller nei")
 		data = self.events.wait_for("WordRecognized", True)
-		print(data[0])
+	#	data = self.events.get("WordRecognized")
+
 		if data[0] == "ja":
 			print("Ja, jeg vil spille!")
-			self.play_again()
+			self.s.ALAnimatedSpeech.say("Da tar vi en runde til!")
+			self.on_start()
 			#self.quit_app = True
 		elif data[0] == "nei":
 			print("nei, jeg vil ikke spille")
-			return
-		"""
-		#self.qiapp.stop()
+			self.s.ALAnimatedSpeech.say("Det var hyggelig å spille med deg, håper å spille mer med deg senere!")
+			self.finished_playing = True
+			#self.quit_app = True
+
 
 	def on_stop(self):
 		"Cleanup"
