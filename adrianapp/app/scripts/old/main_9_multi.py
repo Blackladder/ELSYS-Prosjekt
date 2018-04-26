@@ -16,7 +16,7 @@ import stk.services
 import stk.logging
 import threading
 
-from random import randint
+import random
 
 import led
 import time
@@ -236,7 +236,7 @@ class Activity():
 		# lager random sequence uten samme knapp på rad
 		self.buttonSequence[:] = []
 		while len(self.buttonSequence) < self.number_of_buttons_to_remember:
-			randomKnapp = randint(1, self.number_of_buttons_on_panel)
+			randomKnapp = random.randint(1, self.number_of_buttons_on_panel)
 
 			if len(self.buttonSequence) > 0: # minst en verdi er lagt til
 							# sjekk at verdi er ulike forrige
@@ -350,23 +350,18 @@ class Activity():
 	#               "på pannen.")
 
 
-		time.sleep(1)
-		#	self.turn_off_button(1)
-		#	self.turn_off_button(2)
-		#	self.turn_off_button(3)
-		#	self.turn_off_button(4)
-		time.sleep(1)
 
-		self.play()
+		self.wack_a_mole()
 		#self.ask_to_start()
 
-
+		"""
 		self.logger.warning("Entering while loop")
 
 		while not( 2<1 ):
 			time.sleep(1)
 			dummy = 1
 		self.logger.warning("After while loop")
+		"""
 
 
 	def turn_on_button(self,n):
@@ -429,6 +424,169 @@ class Activity():
 		led.setLed(7,"green")
 		led.setLed(8,"green")
 		led.setLed(9,"green")
+
+	def wack_game_over(self):
+		self.logger.warning("Spiller fikk "+str(self.score)+" poeng")
+		if(self.score>=0):
+			self.s.ALTextToSpeech.say("Du fikk "+str(self.score)+" poeng")
+		self.stop()
+
+	def wack_button_pressed(self, channel):
+		if(self.moles[channel]):
+			self.moles[channel]=False
+			self.score += 1
+			led.clearLed(channel)
+		elif(self.puppies[channel]):
+			self.puppies[channel]=False
+			self.score -= 3
+
+
+
+	def wack_button_1_pressed(self):
+			self.wack_button_pressed(1)
+
+	def wack_button_2_pressed(self):
+			self.wack_button_pressed(2)
+
+	def wack_button_3_pressed(self):
+			self.wack_button_pressed(3)
+
+	def wack_button_4_pressed(self):
+			self.wack_button_pressed(4)
+
+	def wack_button_5_pressed(self):
+			self.wack_button_pressed(5)
+
+	def wack_button_6_pressed(self):
+			self.wack_button_pressed(6)
+
+	def wack_button_7_pressed(self):
+			self.wack_button_pressed(7)
+
+	def wack_button_8_pressed(self):
+			self.wack_button_pressed(8)
+
+	def wack_button_9_pressed(self):
+			self.wack_button_pressed(9)
+
+	def new_mole(self):
+		self.new_mole_nr = 0
+		while (self.moles[self.new_mole_nr]) or (self.puppies[self.new_mole_nr]):
+			self.new_mole_nr = random.randint(1,9) #Random int 1-9
+		self.moles[self.new_mole_nr] = True
+		timeasdf = random.uniform(0.5,3.0)
+		led.setLed(self.new_mole_nr, "green")
+		time.sleep(timeasdf)
+		led.clearLed(self.new_mole_nr)
+		self.moles[self.new_mole_nr] = False
+
+	def new_puppy(self):
+		self.new_puppy_nr = 0
+		while (self.moles[self.new_puppy_nr]) or (self.puppies[self.new_puppy_nr]):
+			self.new_puppy_nr = random.randint(1,9) #Random int 1-9
+		self.puppies[self.new_puppy_nr] = True
+		timeasdf = random.uniform(0.5,3.0)
+		led.setLed(self.new_puppy_nr, "red")
+		time.sleep(timeasdf)
+		led.clearLed(self.new_puppy_nr)
+		self.puppies[self.new_puppy_nr] = False
+
+	def wack_countdown(self):
+		self.s.ALTextToSpeech.say("Fem. fire. tre. to. en. null")
+
+	def wack_a_mole(self):
+		self.logger.warning("Starting wack-a-mole")
+		self.moles = [True,False,False,False,False,False,False,False,False,False]
+		self.puppies = [True,False,False,False,False,False,False,False,False,False]
+		self.new_mole_nr = 0
+		self.new_puppy_nr = 0
+		self.isButtonCallbackRegistered = False
+		self.mole_times = [0]
+		self.puppy_times = [0]
+		self.mole_period = 0.33 # 1/3 sec
+		self.mole_frequency = 3
+		self.total_time = 0
+		self.wack_gametime = 10
+		self.mole_starters = []
+		self.puppy_starters = []
+		self.score = 0
+		for i in range(0,self.wack_gametime*self.mole_frequency):
+			self.puppy_times.append(float(i)/self.mole_frequency+random.uniform(0,self.mole_period))
+			self.mole_times.append(float(i)/self.mole_frequency+random.uniform(0,self.mole_period))
+		for i in self.mole_times:
+			self.mole_starters.append(threading.Timer(i,self.new_mole))
+			self.puppy_starters.append(threading.Timer(i,self.new_puppy))
+		self.b1.when_pressed = self.wack_button_1_pressed # obs: ingen () til slutt
+		self.b2.when_pressed = self.wack_button_2_pressed
+		self.b3.when_pressed = self.wack_button_3_pressed
+		self.b4.when_pressed = self.wack_button_4_pressed
+		self.b5.when_pressed = self.wack_button_5_pressed
+		self.b6.when_pressed = self.wack_button_6_pressed
+		self.b7.when_pressed = self.wack_button_7_pressed
+		self.b8.when_pressed = self.wack_button_8_pressed
+		self.b9.when_pressed = self.wack_button_9_pressed
+		for i in self.mole_starters:
+			i.start()
+		for i in self.puppy_starters:
+			i.start()
+		self.countdown = threading.Timer(self.wack_gametime-5,self.wack_countdown)
+		time.sleep(self.wack_gametime)
+		for i in range(1,10):
+			self.moles[i] = False
+			self.puppies[i] = False
+		led.clearAllLeds()
+		self.logger.warning("Wack-a-mole game over")
+		self.wack_game_over()
+
+	def demo_button_1_pressed(self):
+		#Hallo
+		self.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Hei, jeg er Adrian ^wait(animations/Stand/Gestures/Hey_1)")#Insert wave animation
+
+	def demo_button_2_pressed(self):
+		#Yoga (cut-off Tai chi dance)
+		self.s.ALAnimatedSpeech.say("^start(TaiChi) Pust inn... Pust ut... ^wait(TaiChi)")
+
+	def demo_button_3_pressed(self):
+		#Macarena dance
+		self.s.ALAnimatedSpeech.say("^start(Dances The Macarena) ^startSound(macarena) ^wait(Dances The Macarena) ^stopSound(macarena)")
+
+	def demo_button_4_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_a)")
+
+	def demo_button_5_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_b)")
+
+	def demo_button_6_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_c)")
+
+	def demo_button_7_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_d)")
+
+	def demo_button_8_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_e)")
+
+	def demo_button_9_pressed(self):
+		#Play note
+		self.s.ALTextToSpeech.say("^startSound(note_f)")
+
+	def start_demo(self):
+		self.b1.when_pressed = self.demo_button_1_pressed # obs: ingen () til slutt
+		self.b2.when_pressed = self.demo_button_2_pressed
+		self.b3.when_pressed = self.demo_button_3_pressed
+		self.b4.when_pressed = self.demo_button_4_pressed
+		self.b5.when_pressed = self.demo_button_5_pressed
+		self.b6.when_pressed = self.demo_button_6_pressed
+		self.b7.when_pressed = self.demo_button_7_pressed
+		self.b8.when_pressed = self.demo_button_8_pressed
+		self.b9.when_pressed = self.demo_button_9_pressed
+		while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
+			pass
+		self.main()
 
 	
 	def stop(self):

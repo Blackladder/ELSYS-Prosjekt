@@ -15,4 +15,5 @@ tts = session.service("ALTextToSpeech")
 tts.setLanguage("English")
 aspeech = session.service("ALAnimatedSpeech")
 
-aspeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei nei nei! du trykket for tidlig. Du har gått tom for liv. ^wait(animations/Stand/Emotions/Negative/Hurt_1)")
+tts.say("test")
+#aspeech.say("^start(animations/Stand/Emotions/Negative/Hurt_1) Nei nei nei! du trykket for tidlig. Du har gått tom for liv. ^wait(animations/Stand/Emotions/Negative/Hurt_1)")

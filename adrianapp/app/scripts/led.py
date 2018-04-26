@@ -3,9 +3,8 @@ import Adafruit_PCA9685
 import random
 # Uncomment to enable debug output. import logging logging.basicConfig(level=logging.DEBUG) Initialise the PCA9685 using the default
 # address (0x40).
-pwm = Adafruit_PCA9685.PCA9685()
 # Alternatively specify a different address and/or bus: pwm = Adafruit_PCA9685.PCA9685(address=0x41, busnum=2)
-pwm.set_pwm_freq(1000)
+
 
 
 # Import the PCA9685 module.
@@ -18,7 +17,7 @@ pwm2 = Adafruit_PCA9685.PCA9685(address=0x41)
 pwm1.set_pwm_freq(1000)
 pwm2.set_pwm_freq(1000)
 
-colors = ['red', 'blue', 'green', 'white','purple']
+colors = ['red', 'blue', 'green', 'white','purple','seagreen']
 
 led_id_to_pwm_card = {
 	1: 2,
@@ -101,6 +100,14 @@ def setLed(n, color):
 	elif color=='purple':
 		pwm.set_pwm(led_id_to_port[n]['red'], 0, 4095)
 		pwm.set_pwm(led_id_to_port[n]['blue'], 0, 4095)
+	elif color=='seagreen':
+		pwm.set_pwm(led_id_to_port[n]['red'], 0, 963)
+		pwm.set_pwm(led_id_to_port[n]['green'], 0, 2875)
+		pwm.set_pwm(led_id_to_port[n]['blue'], 0, 1814)
+	elif color=="yellow":
+		pwm.set_pwm(led_id_to_port[n]['red'], 0, 4095)
+		pwm.set_pwm(led_id_to_port[n]['green'], 0, 4095)
+
 
 def setLedRandomColor(n):
 	randomColor = random.choice(colors)

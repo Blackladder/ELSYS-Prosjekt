@@ -26,7 +26,7 @@ from signal import pause
 import timeit
 
 import foerstemann
-import fluesmekkeren as wack
+import wack
 
 
 from gpiozero import Button, OutputDevice
@@ -109,9 +109,7 @@ class Choreographer():
 		self.b8 = Button(27, False)
 		self.b9 = Button(23, False)
 
-		
-		while not (self.events.wait_for("FrontTactilTouched") or self.events.wait_for("MiddleTactilTouched") or self.events.wait_for("RearTactilTouched")):
-			pass
+
 		self.start_look_for_people()
 
 
@@ -134,46 +132,16 @@ class Choreographer():
 		#with Activity(qiapp) as a:
 		#	a.on_start()
 
-		# starting a while loop in a thread to keep the program running
-		#t_loop = threading.Thread(name='t_loop', target=self.while_loop_waiting_for_exitprogram(), daemon=True)
-		#while not( self.quit_app ):
-		#	time.sleep(1)
-
-	def init_buttons(self):
-		self.b1 = Button(22, False)
-		self.b2 = Button(6, False)
-		self.b3 = Button(17, False)
-		self.b4 = Button(5, False)
-		self.b5 = Button(25, False)
-		self.b6 = Button(24, False)
-		self.b7 = Button(8, False)
-		self.b8 = Button(27, False)
-		self.b9 = Button(23, False)
-
-
-	def while_loop_waiting_for_exitprogram(self):
-		while not(self.quit_app):
-			print ("Endless loop waiting for endgame" + str(time.time()) )
-			time.sleep(5)
+		while not( self.quit_app ):
+			time.sleep(1)
 
 	def stop_look_for_people(self):
 		print("Stopping awareness")
 		self.ba.stopAwareness()
 
-	def back_to(self):
-		self.start_look_for_people()
-		# Tråder blir avsluttet kvar gang en avbryte en "vente på talekommando"
-		# så while loopen i __init__ er der ikke lenger så lager en ny her.
-		while not( self.quit_app ):
-			time.sleep(1)
-
 	def start_look_for_people(self):
 		
 		print("Start looking for people")
-
-		
-
-
 		self.ba.setEngagementMode("SemiEngaged")
 		self.ba.setTrackingMode("Head")
 		#print(self.pd.getMaximumDetectionRange)
@@ -185,12 +153,8 @@ class Choreographer():
 			self.events.subscribe("ALBasicAwareness/HumanTracked","test", self.human_tracked)
 			self.events.subscribe("ALBasicAwareness/HumanLost","test", self.human_lost)
 			self.events.subscribe("ALBasicAwareness/StimulusDetected","test", self.stimulus_detected)
-		self.peopleSub = True
+			self.peopleSub = True
 		self.ba.startAwareness()
-
-		while not( self.quit_app ):
-			#self.logger.warning("endless loop in lfp time:" + str(time.time()))
-			time.sleep(5)
 	
 	def human_lost(self,pid):
 		print("People with id: " + str(pid) + " is lost.")
@@ -201,7 +165,8 @@ class Choreographer():
 
 	def human_tracked(self, pid):
 		print("People tracked with id:" + str(pid))
-		
+    	
+    	
 		if pid != -1:
 			#shirtColor = self.events.get("PeoplePerception/Person/" + str(pid) + "/ShirtColor")
 			#seenFor = self.events.get("PeoplePerception/Person/" + str(pid) + "/PresentSince")
@@ -210,141 +175,63 @@ class Choreographer():
 			#print("Shirtcolor:" + shirtColor)
 			#print("Seenfor:" + str(seenFor))
 			#print("Distance:" + str(distance))
-
 			self.stop_look_for_people()
 			self.ask_to_play()
 
-	def play_simon(self,qiapp):
-		print("Kaller på simon!")
-		led.clearAllLeds()
-		self.events.cancel_wait()
+	def play_simon(qiapp):
 		self.close_menu_buttons()
 		with Activity(self.qiapp) as a:
 			a.on_start()
-		# kommer tilbake hit etter spillet
-		print("kommt tilbake til hovedprogram etter simon")
-		time.sleep(3)
-		self.start_look_for_people()
-
-	def play_wack(self,qiapp):
-		print("Kaller på wack!")
-		led.clearAllLeds()
-		self.events.cancel_wait()
-		self.close_menu_buttons()
-		with wack.Wack(self.qiapp) as w:
-			w.wack_a_mole()
-		# kommer tilbake hit etter spillet
-		print("kommt tilbake til hovedprogram etter wack")
-		time.sleep(3)
-		self.init_buttons()
-		self.start_look_for_people()
-
-	def play_foerstemann(self,qiapp):
-		print("Kaller på foerstemann!")
-		led.clearAllLeds()
-		self.events.cancel_wait()
-		self.close_menu_buttons()
-		with foerstemann.Foerstemann(self.qiapp) as f:
-			f.on_start()
-		# kommer tilbake hit etter spillet
-		print("kommt tilbake til hovedprogram etter foerstemann")
-		time.sleep(3)
-		self.init_buttons()
-		self.start_look_for_people()
-
-	def choose_game_called_before_exit(self):
-		led.clearAllLeds()
-		self.close_menu_buttons()
-		
-
-	def choose_game_exit(self):
-		self.choose_game_called_before_exit()
-		self.start_look_for_people()
 
 
 	def choose_game(self):
 		print("Chooose game")
-		print("choose: self.b5.pin:" + str(self.b5.pin))
-		
-		# initializerer muligheten til å velge spill med knapper
-		self.b5.when_pressed=self.choose_game_exit
-		self.b7.when_pressed=self.play_simon
-		self.b8.when_pressed=self.play_wack
-		self.b9.when_pressed=self.play_foerstemann
-		#led.setLed(7,"white")
-		#led.setLed(8,"blue")
-		#led.setLed(9,"yellow")
-		#led.setLed(5,"red")
+		#self.s.ALAnimatedSpeech.say("Hvilket spill vil du spille? Du kan velge mellom Redd valpene, Simon says, og Førstemann ")
 
 
-		
-		print("Chooose game 2")
+		#self.b7.when_pressed=play_simon
+
 		self.s.ALSpeechRecognition.setLanguage("Norwegian")
-		self.s.ALSpeechRecognition.setVocabulary( ['fluesmekker','hermegås','førstemann','avbryt','avslutt'], False )
-		print("Chooose game 3")
-		self.s.ALAnimatedSpeech.say("Hvilket spill vil du spille? Du kan velge mellom Fluesmekker, Hermegås, eller Førstemann.")
+		self.s.ALSpeechRecognition.setVocabulary( ['wack','simon','førstemann'], False )
+		
 		self.logger.warning("waiting for word..")
 		data = self.events.wait_for("WordRecognized", True)
 	#	data = self.events.get("WordRecognized")
-
-		print("Etter waiting for word")
-
-		print(data[0])	
 		print(data[1])
-		if(data[1]>0.3):
-			if (data[0] == "hermegås"):
+		if(data[1]>0.30):
+			if (data[0] == "simon says"):
 				print("Ja, jeg vil spille simon!")
-				self.play_simon(self.qiapp)
+				self.close_menu_buttons()
+				with Activity(self.qiapp) as a:
+					a.on_start()
+				#self.play_simon()
 				#self.quit_app = True
-			elif (data[0] == "fluesmekker"):
-				print("ja, jeg vil spille wack ")
-				self.play_wack(self.qiapp)
+			elif (data[0] == "redd valpene"):
+				print("ja, jeg vil spille ")
+				self.close_menu_buttons()
+				with wack.Wack(self.qiapp) as w:
+					w.wack_a_mole()
 			elif (data[0]=="førstemann"):
 				print("Ja, jeg vil spille førstemann")
-				self.play_foerstemann(self.qiapp)
-			elif ((data[0]=="avbryt") or (data[0]=="avslutt")):
-				print("Avslutter choose game og går tilbake til å vente på folk")
-				self.choose_game_called_before_exit()
-				self.choose_game_exit()
-			else:
-				print "Gjennkjent ord ikke i listen - skal ikke skje!"
-				self.choose_game()
+				self.close_menu_buttons()
+				with foerstemann.Foerstemann(self.qiapp) as f:
+					f.on_start()
+				#self.quit_app = True
+			self.ask_to_play()
 		else:
-			print "Ikkje sikker på ord - kjoerer choose game igjen"
 			self.choose_game()
 		
-		print("end of choose game - going back to look for people")
-		self.start_look_for_people()
-
-	def ask_to_play_exit(self):
-		self.ask_to_play_called_before_exit()
-		self.start_look_for_people()
-
-	def ask_to_play_play(self):
-		self.events.cancel_wait()
-		self.ask_to_play_called_before_exit()
-		self.choose_game()
-
-	def ask_to_play_called_before_exit(self):
-		led.clearAllLeds()
 
 	def ask_to_play(self):
 		print("Ask to play")
-		print("ask: self.b5.pin:" + str(self.b5.pin))
-		self.b5.when_pressed=self.choose_game_exit
-		self.b7.when_pressed=self.ask_to_play_play
-		self.b9.when_pressed=self.choose_game_exit
-		#led.setLed(7,"green")
-		#led.setLed(9,"red")
-	
+		#self.s.ALAnimatedSpeech.say("Vil du spille et spill med meg?")
 		self.s.ALSpeechRecognition.pause(True)
 		self.s.ALSpeechRecognition.removeAllContext()
 
 		self.s.ALSpeechRecognition.setLanguage("Norwegian")
 		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
 		self.s.ALSpeechRecognition.pause(False)
-		self.s.ALAnimatedSpeech.say("Hei, vil du spille et spill med meg?")
-		self.logger.warning("waiting for word..vil du spille? - ja eller nei")
+		self.logger.warning("waiting for word..")
 		data = self.events.wait_for("WordRecognized", True)
 	#	data = self.events.get("WordRecognized")
 		
@@ -359,14 +246,7 @@ class Choreographer():
 			self.start_look_for_people()
 			#self.quit_app = True
 
-		print("ask: self.b5.pin:" + str(self.b5.pin))
-		while not( self.quit_app ):
-			print("endless loop in ask to:" + str(time.time()))
-			time.sleep(5)
-
 	def close_menu_buttons(self):
-		print("Closing menu buttons")
-
 		self.b1.close()
 		self.b2.close()
 		self.b3.close()
@@ -411,7 +291,6 @@ class Activity():
 		#self.out4 = OutputDevice(26, True, True)
 
 		# registrerer buttons
-		#self.logger.warning("button b1: " + str(self.b1))
 		self.b1 = Button(22, False)
 		self.b2 = Button(6, False)
 		self.b3 = Button(17, False)
@@ -425,20 +304,7 @@ class Activity():
 		self.isButtonCallbackRegistered = False
 	
 	def __exit__(self, *err):
-		self.logger.warning("Exiting simon game - cleaning up")
-		
-		led.clearAllLeds()
-		self.b1.when_pressed = None
-		self.b2.when_pressed = None
-		self.b3.when_pressed = None
-		self.b4.when_pressed = None
-		self.b5.when_pressed = None
-		self.b6.when_pressed = None
-		self.b7.when_pressed = None
-		self.b8.when_pressed = None
-		self.b9.when_pressed = None
-
-
+		self.logger.warning("Exiting activity")
 		self.b1.close()
 		self.b2.close()
 		self.b3.close()
@@ -472,33 +338,10 @@ class Activity():
 		    #self.logger.warning("venter på trykk på panna så starter det på nytt...")
 		    #while not self.events.wait_for("FrontTactilTouched"):
 		    #    pass
+		self.finished_playing = True
+		return
+		#self.play()
 
-
-		self.game_ask_play_again()
-		
-		
-
-
-	def game_ask_play_again(self):
-
-		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
-		#self.s.ALSpeechRecognition.pause(False)
-		self.s.ALTextToSpeech.say("Vil du spille en gang til?")
-		self.logger.warning("waiting for word..vil du spille en gang til? - ja eller nei")
-		data = self.events.wait_for("WordRecognized", True)
-	#	data = self.events.get("WordRecognized")
-		
-
-		if data[0] == "ja":
-			print("Ja, jeg vil spille!")
-			self.s.ALAnimatedSpeech.say("Da tar vi en runde til!")
-			self.play()
-			#self.quit_app = True
-		elif data[0] == "nei":
-			print("nei, jeg vil ikke spille")
-			self.s.ALAnimatedSpeech.say("Det var hyggelig å spille med deg, håper å spille mer med deg senere!")
-			self.finished_playing = True
-			#self.quit_app = True
 
 	def game_won(self):
 		#elf.s.ALAnimatedSpeech.say("^start(animations/Stand/Gestures/Hey_1) Riktig!^wait(animations/Stand/Gestures/Hey_1)")
@@ -507,7 +350,7 @@ class Activity():
 		self.current_round_number = self.current_round_number + 1;
 	        self.logger.warning("Du vann - du har no klart: ", self.current_round_number, " runder!")
 		self.buttonPressedCount = 0
-		if ((self.current_round_number > self.record_round_number) and self.current_round_number > 5):
+		if ((self.current_round_number > self.record_round_number) and self.current_round_number!=1):
 			self.record_round_number = self.current_round_number
 			self.s.ALAnimatedSpeech.say("^start(my_animation_yes) Gratulerer, du satt ny rekord!^wait(my_animation_yes)")
 			
@@ -519,7 +362,6 @@ class Activity():
 		# starter nytt spill
 		self.play()
 
-	
 
 	def button_pressed(self,channel):
 		buttonNr=channel
@@ -639,10 +481,8 @@ class Activity():
 	def ask_to_start(self):
 		self.logger.warning("ask to start...")
 
-
-		self.s.ALTextToSpeech.say("Da spiller vi hermegås. Jeg viser ett mønster på knappene og så skal du gjenta det etterpå.")
-		#self.s.ALSpeechRecognition.setLanguage("Norwegian")
-		#self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
+		self.s.ALSpeechRecognition.setLanguage("Norwegian")
+		self.s.ALSpeechRecognition.setVocabulary( ['ja','nei'], False )
 
 		self.logger.warning("waiting for word..")
 		#data = self.events.wait_for("WordRecognized", True)

@@ -10,8 +10,8 @@ session = qi.Session()
 session.connect(connection)
 #tts = session.service("ALTextToSpeech")
 #tts.setLanguage("Norwegian")
-#asr = ALProxy("ALSpeechRecognition", IP, Port)
-#asr.setLanguage("Norwegian")
+asr = session.service("ALSpeechRecognition")
+asr.setLanguage("Norwegian")
 #faceProxy = session.service("ALFaceDetection")
 memoryProxy = session.service("ALMemory")
 #period = 500
@@ -22,11 +22,13 @@ ALDialog.setLanguage("Norwegian")
 
 try:
 	print"unsubscribing..."
-	topic_name = memoryProxy.getData("topic_name")
+	#topic_name = memoryProxy.getData("topic_name")
+	asr.pause(True)
+	asr.removeAllContext()
 finally:
-	ALDialog.unsubscribe("my_dialog")
-	ALDialog.deactivateTopic(topic_name)
-	ALDialog.unloadTopic(topic_name)
+	#ALDialog.unsubscribe("my_dialog")
+	#ALDialog.deactivateTopic(topic_name)
+	#ALDialog.unloadTopic(topic_name)
 	#memoryProxy.unsubscribeToEvent("GameStart")
-	memoryProxy.insertData("topic_name", "")
+	#memoryProxy.insertData("topic_name", "")
 	print"Done"

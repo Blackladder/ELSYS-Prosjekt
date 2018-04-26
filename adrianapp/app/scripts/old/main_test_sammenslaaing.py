@@ -17,7 +17,7 @@ import stk.logging
 
 from random import randint
 
-import led
+#import led
 import time
 from signal import pause
 

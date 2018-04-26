@@ -62,15 +62,15 @@ button_to_norwegian_color = {
 	}
 
 button_to_english_color = {
-	1: "white",
-	2: "green",
+	1: "blue",
+	2: "blue",
 	3: "blue",
-	4: "white",
+	4: "blue",
 	5: "green",
-	6: "green",
-	7: "blue",
-	8: "white",
-	9: "blue"
+	6: "white",
+	7: "green",
+	8: "green",
+	9: "green"
 	}
 
 
@@ -364,15 +364,15 @@ class Activity(object):
 	elif n==4:
 		led.setLed(4,button_to_english_color[4])
 	elif n==5:
-		led.setLed(4,button_to_english_color[5])
+		led.setLed(5,button_to_english_color[5])
 	elif n==6:
-		led.setLed(4,button_to_english_color[6])
+		led.setLed(6,button_to_english_color[6])
 	elif n==7:
-		led.setLed(4,button_to_english_color[7])
+		led.setLed(7,button_to_english_color[7])
 	elif n==8:
-		led.setLed(4,button_to_english_color[8])
+		led.setLed(8,button_to_english_color[8])
 	elif n==9:
-		led.setLed(4,button_to_english_color[9])
+		led.setLed(9,button_to_english_color[9])
 
     def turn_off_button(self,n):
 	if n==1:
